@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="XImageView">
+        <attr name="xiv_border_width" format="dimension" />
+        <attr name="xiv_border_color" format="color" />
+        <attr name="xiv_border_overlay" format="boolean" />
+        <attr name="xiv_circle_background_color" format="color" />
+
+        <attr name="xiv_internal_border_width" format="dimension" />
+        <attr name="xiv_internal_border_color" format="color" />
+
+        <attr name="xiv_max_border_width" format="dimension" />
+
+        <attr name="xiv_border_type" >
+            <enum name="BORDER_TYPE_NORMAL" value="0" />
+            <enum name="BORDER_TYPE_DET_PROGRESS" value="1" />
+            <enum name="BORDER_TYPE_UNDET_PROGRESS" value="2" />
+        </attr>
+
+        <attr name="xiv_border_startAngle" format="float" />
+        <attr name="xiv_border_sweepAngle" format="float" />
+        <attr name="xiv_border_use_center" format="boolean" />
+
+        <attr name="xiv_graph_type" >
+            <enum name="GRAPH_TYPE_PICTURE" value="0" />
+            <enum name="GRAPH_TYPE_LINE" value="1" />
+            <enum name="GRAPH_TYPE_TEXT" value="2" />
+            <enum name="GRAPH_TYPE_TEXT_BG_CIRCLE" value="3" />
+        </attr>
+
+        <attr name="xiv_text" format="string" />
+        <attr name="xiv_text_size" format="dimension" />
+        <attr name="xiv_text_lineSpacing" format="dimension" />
+        <attr name="xiv_text_border_width" format="dimension" />
+        <attr name="xiv_text_alpha" format="integer" />
+        <attr name="xiv_text_back_alpha" format="integer" />
+        <attr name="xiv_text_border_alpha" format="integer" />
+        <attr name="xiv_text_shadow_radius" format="dimension" />
+        <attr name="xiv_text_shadow_dx" format="dimension" />
+        <attr name="xiv_text_shadow_dy" format="dimension" />
+        <attr name="xiv_text_shadow_color" format="color" />
+        <attr name="xiv_text_shadow_is_radius_auto" format="boolean" />
+        <attr name="xiv_text_align" >
+            <enum name="DEFAULT_TEXT_ALIGN_CENTER" value="0" />
+            <enum name="DEFAULT_TEXT_ALIGN_CENTER_MIROR" value="1" />
+        </attr>
+
+        <attr name="xiv_line_color" format="color" />
+        <attr name="xiv_line_glow_color" format="color" />
+        <attr name="xiv_line_glow_width" format="dimension" />
+        <attr name="xiv_line_is_fill_left" format="boolean" />
+        <attr name="xiv_line_is_fill_right" format="boolean" />
+
+        <attr name="xiv_main_color" format="color" />
+        <attr name="xiv_main_type" >
+            <enum name="MAIN_GRADIENT_NONE" value="0" />
+            <enum name="MAIN_GRADIENT_LINEAR" value="1" />
+            <enum name="MAIN_GRADIENT_RADIAL" value="2" />
+            <enum name="MAIN_GRADIENT_SWEEP" value="3" />
+            <enum name="MAIN_IMAGE" value="4" />
+        </attr>
+
+        <attr name="xiv_alpha" format="float" />
+        <attr name="xiv_bg_alpha" format="float" />
+        <attr name="xiv_disable_circular_transformation" format="boolean" />
+        <attr name="xiv_font_path" format="string" />
+
+        <attr name="xiv_foregrounder_enabled" format="boolean" />
+
+    </declare-styleable>
+
+</resources>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorPrimary"
+    tools:context=".Test.MainActivity">
+
+    <ScrollView
+        android:visibility="visible"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true" >
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical" >
+
+            <api.pot.gl.xiv.XImageView
+                android:id="@+id/test3"
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                app:xiv_border_width="3dp"
+                app:xiv_circle_background_color="#a22"/>
+
+            <api.pot.gl.xiv.XImageView
+                android:id="@+id/test2"
+                android:layout_width="match_parent"
+                android:layout_height="350dp"
+                android:src="@drawable/gost"/>
+
+            <api.pot.gl.xiv.XImageView
+                android:id="@+id/tenth"
+                android:layout_width="250dp"
+                android:layout_height="250dp"
+                android:src="@drawable/hondo"
+                app:xiv_internal_border_width="5dp"
+                app:xiv_border_width="10dp"
+                app:xiv_max_border_width="20dp"/>
+
+            <api.pot.gl.xiv.XImageView
+                android:id="@+id/first"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:src="@drawable/hondo"/>
+
+            <api.pot.gl.xiv.XImageView
+                android:id="@+id/second"
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:src="@drawable/hondo"/>
+
+            <api.pot.gl.xiv.XImageView
+                android:id="@+id/third"
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:src="@drawable/hondo"/>
+
+            <api.pot.gl.xiv.XImageView
+                android:id="@+id/sixth"
+                android:layout_width="match_parent"
+                android:layout_height="150dp"
+                android:src="@drawable/hondo"/>
+
+
+
+
+            <RelativeLayout
+                android:id="@+id/container"
+                android:layout_width="match_parent"
+                android:layout_height="400dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"
+                android:background="#300000ff">
+
+                <api.pot.gl.xiv.XImageView
+                    android:id="@+id/tryer5"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:layout_centerHorizontal="true"
+                    android:layout_alignParentTop="true"
+                    android:src="@drawable/wizz"
+                    app:xiv_border_width="0dp"
+                    app:xiv_internal_border_width="0dp" />
+            </RelativeLayout>
+
+            <api.pot.gl.xiv.XImageView
+                android:id="@+id/tryer4"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:src="@drawable/wizz"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"/>
+
+            <api.pot.gl.xiv.XImageView
+                android:id="@+id/tryer3"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:src="@drawable/wizz"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"/>
+
+            <api.pot.gl.xiv.XImageView
+                android:id="@+id/tryer2"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:src="@drawable/wizz"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"/>
+
+            <api.pot.gl.xiv.XImageView
+                android:id="@+id/tryer"
+                android:layout_width="match_parent"
+                android:layout_height="250dp"
+                android:src="@drawable/wizz"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="20dp"
+                app:xiv_internal_border_width="30dp"
+                app:xiv_border_width="20dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</RelativeLayout>

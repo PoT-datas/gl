@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.graphics.pdf.PdfDocument;
 import android.net.Uri;
 import android.os.Build;
@@ -30,7 +31,7 @@ import java.text.DecimalFormat;
 
 import static android.content.Context.PRINT_SERVICE;
 
-public class BitmapMng {
+public class XImage {
 
 
     public static void galleryAddPic(Context context, File file) {
@@ -85,6 +86,16 @@ public class BitmapMng {
         return BitmapFactory.decodeResource(res, resId, options);
     }
 
+    public static Bitmap decodeSampledBitmapFromXMLResource(Resources res, int resId, int reqWidth, int reqHeight) {
+        Drawable drawable = res.getDrawable(resId);
+        Canvas canvas = new Canvas();
+        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        canvas.setBitmap(bitmap);
+        drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+        drawable.draw(canvas);
+        return getResizedBitmap(bitmap, reqWidth, reqHeight);
+    }
+
     public static int calculateInSampleSize(
             BitmapFactory.Options options, int reqWidth, int reqHeight) {
         // Raw height and width of image
@@ -106,6 +117,19 @@ public class BitmapMng {
         }
 
         return inSampleSize;
+    }
+
+    public static Bitmap getResizedBitmap(Bitmap originalBitmap, int newWidth, int newHeight){
+        if(originalBitmap==null) return null;
+        //
+        if(newWidth<=0 && newHeight>0){
+            newWidth = originalBitmap.getWidth() * newHeight / originalBitmap.getHeight();
+        }else if(newWidth>0 && newHeight<=0){
+            newHeight = originalBitmap.getHeight() * newWidth / originalBitmap.getWidth();
+        } else if(newWidth<=0 && newHeight<=0) return null;
+        //
+        return Bitmap.createScaledBitmap(
+                originalBitmap, newWidth, newHeight, false);
     }
 
     public static Bitmap clone(Bitmap bitmap){
@@ -153,8 +177,8 @@ public class BitmapMng {
 
     public static boolean copy() {
 
-        File dirOri = new File(BitmapMng.getInternalStoragePath() + "/town.jpg");
-        File dirDest = new File(BitmapMng.getInternalStoragePath() + "/Tester" + "/town.jpg");
+        File dirOri = new File(XImage.getInternalStoragePath() + "/town.jpg");
+        File dirDest = new File(XImage.getInternalStoragePath() + "/Tester" + "/town.jpg");
 
         FileChannel src = null;
         FileChannel dst = null;

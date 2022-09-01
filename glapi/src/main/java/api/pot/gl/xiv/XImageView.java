@@ -42,6 +42,7 @@ import android.widget.RelativeLayout;
 
 import api.pot.gl.R;
 import api.pot.gl.tools.Global;
+import api.pot.gl.tools.XImage;
 import api.pot.gl.xiv.tools.Descriptor;
 import api.pot.gl.xiv.tools.DetProgress;
 import api.pot.gl.xiv.tools.Forgrounder;
@@ -57,9 +58,6 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
-
-import static api.pot.gl.tools.BitmapMng.decodeSampledBitmapFromPath;
-import static api.pot.gl.xiv.tools.ImgPainter.getResizedBitmap;
 
 @SuppressLint("AppCompatCustomView")
 @SuppressWarnings("UnusedDeclaration")
@@ -486,7 +484,7 @@ public class XImageView extends ImageView {
                         Canvas copycanvas = new Canvas(copyBmp);
                         aroundView.view.setup();
                         aroundView.view.draw(copycanvas);
-                        copyBmp = getResizedBitmap(copyBmp, (int) (getSmartWidth() * aroundView.ratioSize), (int) (getSmartHeight() * aroundView.ratioSize));
+                        copyBmp = XImage.getResizedBitmap(copyBmp, (int) (getSmartWidth() * aroundView.ratioSize), (int) (getSmartHeight() * aroundView.ratioSize));
                         float x = (float) (mDrawableRect.centerX() + mBorderRadius*Math.cos(Math.toRadians(aroundView.position))- copyBmp.getWidth() / 2),
                                 y = (float) (mDrawableRect.centerY() + mBorderRadius*Math.sin(Math.toRadians(aroundView.position)) - copyBmp.getHeight() / 2);
                         //
@@ -1368,7 +1366,7 @@ public class XImageView extends ImageView {
             Bitmap bitmap;
             @Override
             public void run() {
-                bitmap = decodeSampledBitmapFromPath(path, getSmartWidth(), getSmartHeight());
+                bitmap = XImage.decodeSampledBitmapFromPath(path, getSmartWidth(), getSmartHeight());
                 post(new Runnable() {
                     @Override
                     public void run() {

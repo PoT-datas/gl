@@ -1,4 +1,4 @@
-package api.pot.gl.xiv.tools;
+package api.pot.gl.xiv.tools.morphism;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -13,8 +13,11 @@ import android.widget.RelativeLayout;
 import api.pot.gl.xiv.XImageView;
 
 public class Transformer {
+    private TransformerListener transformerListener;
+
     private XImageView main;
-    private boolean backup_isImgNormalSize = true;
+    private boolean backup_isBoundWithBitmapDimens = false;
+    private boolean backup_isBoundWithViewDimens = false;
     private float backup_radiusRatio = -1;
     private RectF backup_dRect = null;
     //
@@ -35,14 +38,19 @@ public class Transformer {
         this.main = main;
     }
 
+    public void setTransformerListener(TransformerListener transformerListener) {
+        this.transformerListener = transformerListener;
+    }
+
     public void transformRadius(){
         //
         if(backup_radiusRatio==-1) {
             backup_radiusRatio = main.getNotRoundForm().radiusRatio;
-            backup_isImgNormalSize = main.isImgNormalSize();
-            isToRound = main.isDisableCircularTransformation();
+            backup_isBoundWithBitmapDimens = main.isBoundWithBitmapDimens();
+            backup_isBoundWithViewDimens = main.isBoundWithViewDimens();
+            isToRound = !main.isEnabledCircularTransformation();
         }
-        if(!main.isDisableCircularTransformation()) main.getNotRoundForm().setRadiusRatio(1f/2);
+        if(main.isEnabledCircularTransformation()) main.getNotRoundForm().setRadiusRatio(1f/2);
         //
         if(isToRound){
             progresser = ValueAnimator.ofFloat(main.getNotRoundForm().radiusRatio, 1f/2);
@@ -72,12 +80,14 @@ public class Transformer {
             @Override
             public void onAnimationStart(Animator animation) {
                 super.onAnimationStart(animation);
-                main.setDisableCircularTransformation(true);
+                main.setEnabledCircularTransformation(false);
+                if(transformerListener!=null) transformerListener.onTransformStart();
             }
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
-                main.setDisableCircularTransformation(isToRound);
+                main.setEnabledCircularTransformation(!isToRound);
+                if(transformerListener!=null) transformerListener.onTransformEnd();
             }
         });
         mMorphingAnimatorSet.setInterpolator(new AccelerateInterpolator());

@@ -39,8 +39,10 @@ import android.view.ViewOutlineProvider;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import api.pot.gl.R;
+import api.pot.gl.geo.TextPainter;
 import api.pot.gl.tools.Global;
 import api.pot.gl.tools.XImage;
 import api.pot.gl.xiv.tools.Descriptor;
@@ -50,7 +52,8 @@ import api.pot.gl.xiv.tools.ImgPainter;
 import api.pot.gl.xiv.tools.IndetProgress;
 import api.pot.gl.xiv.tools.PaintBundle;
 import api.pot.gl.xiv.tools.Pulsation;
-import api.pot.gl.xiv.tools.Transformer;
+import api.pot.gl.xiv.tools.XivListener;
+import api.pot.gl.xiv.tools.morphism.Transformer;
 import api.pot.gl.xiv.tools.Transitor;
 
 import java.io.File;
@@ -140,7 +143,6 @@ public class XImageView extends ImageView {
 
     private Boolean isMirrorEffect = false;
 
-    private boolean isImgNormalSize = true;
     private NotRoundForm notRoundForm;
 
     private Transitor transitor;
@@ -179,10 +181,24 @@ public class XImageView extends ImageView {
     private boolean mReady;
     private boolean mSetupPending;
     private boolean mBorderOverlay;
-    private boolean mDisableCircularTransformation;
 
 
     private boolean mForegrounderEnabled = true;
+
+
+
+
+
+    ///----------------------------------XImageView+++++++++++++++++++++++++++++++++++
+    private boolean mBoundWithBitmapDimens = false;//l'image n'est plus en format carré, mais correspond à la taille normal du bitmap
+    private boolean mBoundWithViewDimens = false;//l'image n'est plus en format carré, mais correspond à la taille exact de la vue
+    private boolean mEnabledCircularTransformation = true;
+
+    private int shadowRad=10, shadowDx=0, shadowDy=10, shadowColor= Color.BLACK;
+
+    private XivListener xivListener;
+
+    ///----------------------------------XImageView+++++++++++++++++++++++++++++++++++
 
 
 
@@ -269,9 +285,16 @@ public class XImageView extends ImageView {
 
         mBgAlpha = (int) (255*a.getFloat(R.styleable.XImageView_xiv_bg_alpha, 1)%256);
 
-        mDisableCircularTransformation = a.getBoolean(R.styleable.XImageView_xiv_disable_circular_transformation, false);
+        mEnabledCircularTransformation = a.getBoolean(R.styleable.XImageView_xiv_enabled_circular_transformation, true);
+        mBoundWithBitmapDimens = a.getBoolean(R.styleable.XImageView_xiv_bound_with_bitmap_dimens, false);
+        mBoundWithViewDimens = a.getBoolean(R.styleable.XImageView_xiv_bound_with_view_dimens, false);
 
         mForegrounderEnabled = a.getBoolean(R.styleable.XImageView_xiv_foregrounder_enabled, mForegrounderEnabled);
+
+        shadowRad = a.getDimensionPixelSize(R.styleable.XImageView_xiv_shadow_rad, 0);
+        shadowDx = a.getDimensionPixelSize(R.styleable.XImageView_xiv_shadow_dx, 0);
+        shadowDy = a.getDimensionPixelSize(R.styleable.XImageView_xiv_shadow_dy, 0);
+        shadowColor = a.getColor(R.styleable.XImageView_xiv_shadow_color, Color.BLACK);
 
 
         Global.useContext(context);
@@ -344,25 +367,37 @@ public class XImageView extends ImageView {
         //transitor.update();
 
         if (mBitmap == null) {
+            initializeBitmap();
             return;
         }
 
+        //draw back shadow
+
         //draw bg
-        if (mCircleBackgroundColor != Color.TRANSPARENT && !isDisableCircularTransformation()) {
+        if (mCircleBackgroundColor != Color.TRANSPARENT && mEnabledCircularTransformation) {
             Log.d("XL", getHeight()+" http://"+mCircleBackgroundRadius);
             canvas.drawCircle(mDrawableRect.centerX(), mDrawableRect.centerY(), mCircleBackgroundRadius, mCircleBackgroundPaint);
-        }else if(mCircleBackgroundColor != Color.TRANSPARENT && isDisableCircularTransformation()){
+        }else if(mCircleBackgroundColor != Color.TRANSPARENT && !mEnabledCircularTransformation){
             canvas.drawCircle(mDrawableRect.centerX(), mDrawableRect.centerY(), Math.max(getWidth(), getHeight()),
                     mCircleBackgroundPaint);
         }
 
         //draw content
         if(graphType==GRAPH_TYPE_PICTURE) {
-            //mBitmapPaint.setAlpha((int) (getAlpha()*255));
-            mBitmapPaint.setAlpha((int) getAlpha());
-            Log.d("API_GL", "http://"+getAlpha());
+            //draw bitmap with shadow
+            ///shadow
+            Paint p = new Paint();
+            if(shadowRad>0){
+                p.setStyle(Paint.Style.STROKE);
+                p.setColor(shadowColor);
+                p.setStrokeWidth(Math.max(Math.max(shadowDx, shadowDy), shadowRad));
+                p.setShadowLayer(shadowRad,shadowDx, shadowDy, shadowColor);
+                p.setMaskFilter(new BlurMaskFilter(Math.max(Math.max(shadowDx, shadowDy), shadowRad), BlurMaskFilter.Blur.NORMAL));
+            }
             //
-            if(mDisableCircularTransformation){
+            mBitmapPaint.setAlpha((int) getAlpha());
+            //
+            if(!mEnabledCircularTransformation){
                 if(notRoundForm.rx==-1) notRoundForm.rx = mDrawableRect.width()*notRoundForm.radiusRatio;
                 if(notRoundForm.ry==-1) notRoundForm.ry = mDrawableRect.height()*notRoundForm.radiusRatio;
                 if(notRoundForm.notRoundForm_drawablePath==null)
@@ -370,10 +405,15 @@ public class XImageView extends ImageView {
                             ImgPainter.roundedRectPath(mDrawableRect, notRoundForm.rx, notRoundForm.ry,
                                     notRoundForm.isTopLeftRound, notRoundForm.isTopRightRound, notRoundForm.isBottomRightRound, notRoundForm.isBottomLeftRound);
             }
+            ///shadow
+            if(shadowRad>0)
+                onDrawBitmap(canvas, p, mDrawableRadius, mDrawableRect, notRoundForm.notRoundForm_drawablePath);
             onDrawBitmap(canvas, mBitmapPaint, mDrawableRadius, mDrawableRect, notRoundForm.notRoundForm_drawablePath);
             //
             if(transitor.transition) onDrawBitmap(canvas, transitor.update(), transitor.mDrawableRadius, transitor.mDrawableRect, transitor.notRoundForm_drawablePath);
         }
+        //
+        if(xivListener!=null) xivListener.onDrawContent(canvas);
 
         //draw fg
         if(mMaxBorderRadius > DEFAULT_MAX_BORDER_RADIUS){
@@ -386,7 +426,7 @@ public class XImageView extends ImageView {
         }
         if (mBorderWidth > 0) {
             if(mBorderType==BORDER_TYPE_NORMAL){
-                if(!mDisableCircularTransformation)
+                if(mEnabledCircularTransformation)
                     canvas.drawCircle(mBorderRect.centerX(), mBorderRect.centerY(), mBorderRadius, mBorderPaint);
                 else {
                     if(notRoundForm.border_rx==-1) notRoundForm.border_rx = mBorderRect.width()*notRoundForm.radiusRatio;
@@ -415,7 +455,7 @@ public class XImageView extends ImageView {
                     if (myArcs.get(0).paint.shader != null)
                         nowPaint.setShader(myArcs.get(0).paint.shader);
                     //
-                    if(!mDisableCircularTransformation)
+                    if(mEnabledCircularTransformation)
                         canvas.drawArc(arcBorderRect, myArcs.get(0).startAngle, myArcs.get(0).sweepAngle, myArcs.get(0).useCenter, nowPaint);
                     else {
                         if(notRoundForm.arc_rx==-1) notRoundForm.arc_rx = arcBorderRect.width()*notRoundForm.radiusRatio;
@@ -442,7 +482,7 @@ public class XImageView extends ImageView {
                         if(arc.paint.color!=-1)nowPaint.setColor(arc.paint.color);
                         if(arc.paint.shader!=null)nowPaint.setShader(arc.paint.shader);
                         //
-                        if(!mDisableCircularTransformation)
+                        if(mEnabledCircularTransformation)
                             canvas.drawArc(arcBorderRect, arc.startAngle, arc.sweepAngle, arc.useCenter, nowPaint);
                         else {
                             if(notRoundForm.arc_rx==-1) notRoundForm.arc_rx = arcBorderRect.width()*notRoundForm.radiusRatio;
@@ -473,28 +513,11 @@ public class XImageView extends ImageView {
 
         //draw AroundViews
         if(aroundViews!=null && aroundViews.size()!=0){
-            for(AroundView aroundView : aroundViews){
+            for(AroundView aroundView : aroundViews)
                 if(aroundView.isVisible){
-                    if(!aroundView.isInit) aroundView.init();
-                    //
-                    int bmpW = aroundView.view.getSmartWidth(),
-                            bmpH = aroundView.view.getSmartHeight();
-                    if(bmpH!=0 && bmpW!=0) {
-                        Bitmap copyBmp = Bitmap.createBitmap(bmpW, bmpH, Bitmap.Config.ARGB_8888);
-                        Canvas copycanvas = new Canvas(copyBmp);
-                        aroundView.view.setup();
-                        aroundView.view.draw(copycanvas);
-                        copyBmp = XImage.getResizedBitmap(copyBmp, (int) (getSmartWidth() * aroundView.ratioSize), (int) (getSmartHeight() * aroundView.ratioSize));
-                        float x = (float) (mDrawableRect.centerX() + mBorderRadius*Math.cos(Math.toRadians(aroundView.position))- copyBmp.getWidth() / 2),
-                                y = (float) (mDrawableRect.centerY() + mBorderRadius*Math.sin(Math.toRadians(aroundView.position)) - copyBmp.getHeight() / 2);
-                        //
-                        if( Math.abs(mMaxBorderWidth-mBorderWidth)<Math.max(copyBmp.getWidth() / 2, copyBmp.getHeight() / 2) )
-                            setmMaxBorderWidth(Math.max(copyBmp.getWidth() / 2, copyBmp.getHeight() / 2)+mBorderWidth);
-                        //
-                        canvas.drawBitmap(copyBmp, x, y, null);
-                    }
+                    aroundView.init();
+                    aroundView.onDraw(canvas);
                 }
-            }
         }
 
         //draw description
@@ -511,7 +534,7 @@ public class XImageView extends ImageView {
     private void onDrawBitmap(Canvas canvas, Paint paint, float mDrawableRadius, RectF mDrawableRect, Path notRoundForm_drawablePath) {
         if(canvas==null || paint==null || mDrawableRect==null) return;
         //
-        if(!mDisableCircularTransformation) {
+        if(mEnabledCircularTransformation) {
             if(mDrawableRadius==0) return;
             //
             canvas.drawCircle(mDrawableRect.centerX(), mDrawableRect.centerY(), mDrawableRadius, paint);
@@ -539,6 +562,52 @@ public class XImageView extends ImageView {
     public void setPaddingRelative(int start, int top, int end, int bottom) {
         super.setPaddingRelative(start, top, end, bottom);
         setup();
+    }
+
+
+
+
+    //*************************XIV***Methodes******************************************************
+    public void setShadowRad(int shadowRad) {
+        this.shadowRad = shadowRad;
+        setup();
+    }
+    public void setShadowDx(int shadowDx) {
+        this.shadowDx = shadowDx;
+        setup();
+    }
+    public void setShadowDy(int shadowDy) {
+        this.shadowDy = shadowDy;
+        setup();
+    }
+    public void setShadowColor(int shadowColor) {
+        this.shadowColor = shadowColor;
+        setup();
+    }
+    public void setPadding(int pad) {
+        setPadding(pad, pad, pad, pad);
+    }
+    public void setShadowRadRes(int resId) {
+        this.shadowRad = (int) getResources().getDimension(resId);
+        setup();
+    }
+    public void setShadowDxRes(int resId) {
+        this.shadowDx = (int) getResources().getDimension(resId);
+        setup();
+    }
+    public void setShadowDyRes(int resId) {
+        this.shadowDy = (int) getResources().getDimension(resId);
+        setup();
+    }
+    public void setShadowColorRes(int resId) {
+        this.shadowColor = getResources().getColor(resId);
+        setup();
+    }
+    public void setPaddingRes(int resId) {
+        setPadding((int) getResources().getDimension(resId), (int) getResources().getDimension(resId), (int) getResources().getDimension(resId), (int) getResources().getDimension(resId));
+    }
+    public void setListener(XivListener xivListener) {
+        this.xivListener = xivListener;
     }
 
     //*************************custom***anim******************************************************
@@ -582,7 +651,7 @@ public class XImageView extends ImageView {
 
     public void setmDrawableRect(RectF mDrawableRect) {
         this.mDrawableRect = mDrawableRect;
-        if(mDisableCircularTransformation) notRoundForm.updater();
+        if(!mEnabledCircularTransformation) notRoundForm.updater();
         invalidater();
     }
 
@@ -655,7 +724,7 @@ public class XImageView extends ImageView {
         //
 
         public void updater() {
-            if(!mDisableCircularTransformation) {
+            if(mEnabledCircularTransformation) {
                 invalidater();
                 return;
             }
@@ -760,15 +829,35 @@ public class XImageView extends ImageView {
         }
     }
 
-    public boolean isImgNormalSize() {
-        return isImgNormalSize;
+    public boolean isBoundWithBitmapDimens() {
+        return mBoundWithBitmapDimens;
     }
 
-    public void setImgNormalSize(boolean isImgNormalSize) {
-        this.isImgNormalSize = isImgNormalSize;
-
+    public void setBoundWithBitmapDimens(boolean mBoundWithBitmapDimens) {
+        this.mBoundWithBitmapDimens = mBoundWithBitmapDimens;
         notRoundForm.updater();
+        setup();
+    }
 
+    public boolean isBoundWithViewDimens() {
+        return mBoundWithViewDimens;
+    }
+
+    public void setBoundWithViewDimens(boolean mBoundWithViewDimens) {
+        this.mBoundWithViewDimens = mBoundWithViewDimens;
+        notRoundForm.updater();
+        setup();
+    }
+
+    public boolean isEnabledCircularTransformation() {
+        return mEnabledCircularTransformation;
+    }
+
+    public void setEnabledCircularTransformation(boolean mEnabledCircularTransformation) {
+        if(this.mEnabledCircularTransformation == mEnabledCircularTransformation) return;
+        this.mEnabledCircularTransformation = mEnabledCircularTransformation;
+        if(!mEnabledCircularTransformation && notRoundForm!=null) notRoundForm.updater();
+        //initializeBitmap();
         setup();
     }
 
@@ -981,6 +1070,11 @@ public class XImageView extends ImageView {
 
     public List<AroundView> getAroundViews() { return aroundViews; }
 
+    public AroundView getAroundView(int i) {
+        if(aroundViews==null || aroundViews.size()<=i) return null;
+        return aroundViews.get(i);
+    }
+
     public void clearAroundViews(){
         if(aroundViews==null) aroundViews = new ArrayList<>();
         else aroundViews.clear();
@@ -998,88 +1092,185 @@ public class XImageView extends ImageView {
         public float position = 0f;
         public boolean isVisible = false;
         public boolean isInit = false;
-        public float ratioSize = 1f/4;
-        private String text = "";
+        public float ratioSize = 1f/7;
+
+        public static final int TYPE_FULL_COLOR = 0;
+        public static final int TYPE_TEXT = 1;
+        public static final int TYPE_IMAGE = 2;
+
+        public int type = TYPE_FULL_COLOR;
+        public String text = "";
+        public int imgRes = -1;
+        public String imgPath;
+        public Bitmap bitmap;
+
+        public void setText(String text, int... colors_f2b){//From foreground to back
+            type = TYPE_TEXT;
+            this.text = text;
+            setColors(colors_f2b);
+            isInit = false;
+            invalidater();
+        }
+
+        public void setFullColor(int... colors_f2b){
+            type = TYPE_FULL_COLOR;
+            setColors(colors_f2b);
+            isInit = false;
+            invalidater();
+        }
+
+        public void setImage(String path, int... colors_f2b){
+            type = TYPE_IMAGE;
+            this.bitmap = null;
+            this.imgPath = path;
+            this.imgRes = -1;
+            setColors(colors_f2b);
+            isInit = false;
+            invalidater();
+        }
+
+        public void setImage(int res, int... colors_f2b){
+            type = TYPE_IMAGE;
+            this.bitmap = null;
+            this.imgPath = null;
+            this.imgRes = res;
+            setColors(colors_f2b);
+            isInit = false;
+            invalidater();
+        }
+
+        public void setImage(Bitmap bitmap, int... colors_f2b){
+            type = TYPE_IMAGE;
+            this.bitmap = bitmap;
+            setColors(colors_f2b);
+            isInit = false;
+            invalidater();
+        }
+
+        private void setColors(int... colors_f2b) {
+            if(colors_f2b==null) return;
+            if(colors_f2b.length>0) colorBorder = colors_f2b[0];
+            if(colors_f2b.length>1) colorContent = colors_f2b[1];
+            if(colors_f2b.length>2) colorBg = colors_f2b[2];
+            if(colors_f2b.length>3) colorShadow = colors_f2b[3];
+        }
+
+        public int colorContent = -1;
+        public int marginContent = 0;
+        public int colorBg = -1;
+        public int colorBorder = -1;
+        public int colorShadow = -1;
+
+        public RectF bound;
+        public Paint paintContent;
+        public Paint paintBg;
+        public Paint paintBorder;
+        public Paint paintShadow;
+
+
+        public void onDraw(Canvas canvas) {
+            if(colorBg!=-1)canvas.drawOval(bound, paintBg);
+            if(colorContent!=-1){
+                switch(type){
+                    case TYPE_FULL_COLOR:{
+                        canvas.drawOval(new RectF(bound.left+marginContent, bound.top+marginContent,
+                                bound.right-marginContent, bound.bottom-marginContent), paintContent);
+                        break;
+                    }
+                    case TYPE_TEXT:{
+                        TextPainter.drawTextCentered(text, paintContent, canvas,
+                                new RectF(bound.left+marginContent, bound.top+marginContent,
+                                        bound.right-marginContent, bound.bottom-marginContent),
+                                true);
+                        break;
+                    }
+                    case TYPE_IMAGE:{
+                        canvas.drawOval(new RectF(bound.left+marginContent, bound.top+marginContent,
+                                bound.right-marginContent, bound.bottom-marginContent), paintContent);
+                        break;
+                    }
+                }
+            }
+            if(colorBorder!=-1)
+                canvas.drawOval(new RectF(bound.left-paintBorder.getStrokeWidth()/2, bound.top-paintBorder.getStrokeWidth()/2,
+                    bound.right+paintBorder.getStrokeWidth()/2, bound.bottom+paintBorder.getStrokeWidth()/2), paintBorder);
+        }
+
+        public void init() {
+            //if(isInit) return;
+            float w = getSmartWidth() * ratioSize;
+            float h = getSmartHeight() * ratioSize;
+            float x = (float) (mDrawableRect.centerX() + mBorderRadius*Math.cos(Math.toRadians(position))- w/2),
+                    y = (float) (mDrawableRect.centerY() + mBorderRadius*Math.sin(Math.toRadians(position)) - h/2);
+            //
+            bound = new RectF(x, y, x+w, y+h);
+            int shadow = 5;
+            marginContent = (int) (w/5);
+            if(colorContent!=-1){
+                if(paintContent==null)paintContent = new Paint();
+                paintContent.setMaskFilter(new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL));
+                if(type==TYPE_IMAGE){
+                    if(bitmap==null) {
+                        if(imgPath!=null) bitmap = XImage.decodeSampledBitmapFromPath(imgPath,
+                                (int) bound.width()-marginContent*2, (int) bound.height()-marginContent*2);
+                        else if(imgRes!=-1) bitmap = XImage.decodeSampledBitmapFromResource(getResources(), imgRes,
+                                (int) bound.width()-marginContent*2, (int) bound.height()-marginContent*2);
+                    }
+                    try {
+                        paintContent.setShader(new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
+                    }catch (Exception e){
+                        bitmap = null;
+                    }
+                }else paintContent.setColor(colorContent);
+                if(colorShadow!=-1){
+                    paintContent.setShadowLayer(shadow,shadow, shadow, colorShadow);
+                    paintContent.setMaskFilter(new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL));
+                }
+            }
+            if(colorBg!=-1){
+                if(paintBg==null)paintBg = new Paint();
+                paintBg.setColor(colorBg);
+                if(colorShadow!=-1){
+                    paintBg.setShadowLayer(shadow,shadow, shadow, colorShadow);
+                    paintBg.setMaskFilter(new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL));
+                }
+            }
+            if(colorBorder!=-1){
+                if(paintBorder==null)paintBorder = new Paint();
+                paintBorder.setStyle(Paint.Style.STROKE);
+                paintBorder.setStrokeWidth(w/5);
+                paintBorder.setColor(colorBorder);
+                paintBorder.setMaskFilter(new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL));
+            }
+            //
+            isInit = true;
+            if(isVisible)invalidater();
+        }
 
         public AroundView(float position) {
             this.position = position;
         }
 
         public void update(){
-            invalidater();
-        }
-
-        public void setText(String text){/*
-            if(!isInit) {
-                this.text = text;
-                invalidater();
-                return;
-            }
-            view.getTextMng().setText(text);
-            invalidater();*/
+            init();
         }
 
         public void setPosition(float position) {
             if(this.position == position) return;
             this.position = position;
-            invalidater();
+            init();
         }
 
         public void setRatioSize(float ratioSize) {
             if(this.ratioSize == ratioSize) return;
             this.ratioSize = ratioSize;
-            invalidater();
+            init();
         }
 
         public void setVisible(Boolean visible) {
             if(isVisible==visible)return;
             isVisible = visible;
-            if(isVisible) invalidater();
-        }
-
-        public void init() {/*
-            if(isInit) return;
-            //
-            XmlPullParser parser = getResources().getXml(R.xml.model);
-            int count = 0;
-            AttributeSet attr = null;
-            try {
-                parser.next();
-                parser.nextTag();
-                attr = Xml.asAttributeSet(parser);
-                count = attr.getAttributeCount();
-            } catch (Exception e) {e.printStackTrace();}
-            //
-            if(count>0)
-                this.view = new ComplexImageView(getContext(), attr, 0);
-            else
-                this.view = new ComplexImageView(getContext());
-            //
-            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(getSmartWidth(), getSmartHeight());
-            this.view.setLayoutParams(layoutParams);
-            //
-            this.view.getMain().colors.clear();
-            this.view.getMain().setMainType(ComplexImageView.Main.MAIN_GRADIENT_LINEAR);
-            this.view.getMain().colors.add(Global.FIRST_GES_GRADIENT_COLOR);
-            this.view.getMain().colors.add(Global.SECOND_GES_GRADIENT_COLOR);
-            this.view.getMain().colors.add(Global.THIRD_GES_GRADIENT_COLOR);
-            //
-            this.view.getTextMng().setTextSizeAuto(false);
-            this.view.getTextMng().setSize(0);
-            this.view.getTextMng().setMonoLine(true);
-            this.view.getTextMng().addTextColor(Global.MAIN_GES_TEXT_COLOR);
-            this.view.getTextMng().setText(text);
-            this.view.getTextMng().setTypeface(Global.ges_design_type_face);
-            //
-            this.view.setBorderWidth((int) (mBorderWidth*1/ratioSize));
-            if(isUseGradientColorsForBorder())
-                this.view.setUseGradientColorsForBorder(true);
-            else
-                this.view.setBorderColor(mBorderColor);
-            //
-            isInit = true;
-            //
-            if(isVisible)invalidater();*/
+            if(isVisible) init();
         }
     }
 
@@ -1311,22 +1502,6 @@ public class XImageView extends ImageView {
         setup();
     }
 
-    public boolean isDisableCircularTransformation() {
-        return mDisableCircularTransformation;
-    }
-
-    public void setDisableCircularTransformation(boolean disableCircularTransformation) {
-        if (mDisableCircularTransformation == disableCircularTransformation) {
-            return;
-        }
-
-        mDisableCircularTransformation = disableCircularTransformation;
-
-        if(mDisableCircularTransformation && notRoundForm!=null) notRoundForm.updater();
-
-        initializeBitmap();
-    }
-
     public void setImageAddress(String imageAddress) {
         this.imageAddress = imageAddress;
         cmpA=0;
@@ -1370,8 +1545,7 @@ public class XImageView extends ImageView {
                 post(new Runnable() {
                     @Override
                     public void run() {
-                        setImageBitmap(bitmap);
-                        //main.setMainType(Main.MAIN_IMAGE);
+                        if(bitmap!=null) setImageBitmap(bitmap);
                     }
                 });
             }
@@ -1529,9 +1703,12 @@ public class XImageView extends ImageView {
 
         float left;
         float top;
-        if( (graphType==GRAPH_TYPE_PICTURE || graphType==GRAPH_TYPE_TEXT_BG_CIRCLE) && !(mDisableCircularTransformation && isImgNormalSize) ){
+        if( mEnabledCircularTransformation || (!mBoundWithBitmapDimens && !mBoundWithViewDimens) ){
             left = getPaddingLeft() + (availableWidth - sideLength) / 2f;
             top = getPaddingTop() + (availableHeight - sideLength) / 2f;
+        }else if(mBoundWithViewDimens){
+            left = getPaddingLeft();
+            top = getPaddingTop();
         }else {
             left = getPaddingLeft();
             top = getPaddingTop();
@@ -1557,7 +1734,7 @@ public class XImageView extends ImageView {
             }
         }
 
-        RectF ret_bounds = (graphType==GRAPH_TYPE_PICTURE || graphType==GRAPH_TYPE_TEXT_BG_CIRCLE) && !(mDisableCircularTransformation && isImgNormalSize) ?
+        RectF ret_bounds = (mEnabledCircularTransformation || (!mBoundWithBitmapDimens && !mBoundWithViewDimens)) ?
                 new RectF(left+mInternalBorderWidth+borderInterval(), top+mInternalBorderWidth+borderInterval(),
                         left + sideLength-mInternalBorderWidth-borderInterval(), top + sideLength-mInternalBorderWidth-borderInterval()) :
                 new RectF(left+mInternalBorderWidth+borderInterval()+w_adjustment, top+mInternalBorderWidth+borderInterval()+h_adjustment,
@@ -1609,7 +1786,7 @@ public class XImageView extends ImageView {
     }
 
     private boolean inTouchableArea(float x, float y) {
-        if(!mDisableCircularTransformation)
+        if(mEnabledCircularTransformation || (!mBoundWithBitmapDimens && !mBoundWithViewDimens))
             return Math.pow(x - mBorderRect.centerX(), 2) + Math.pow(y - mBorderRect.centerY(), 2) <= Math.pow(mBorderRadius, 2);
         else
             return (mBorderRect.left<=x && x<=mBorderRect.right) && (mBorderRect.top<=y && y<=mBorderRect.bottom);

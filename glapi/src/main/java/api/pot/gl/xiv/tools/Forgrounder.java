@@ -39,7 +39,7 @@ public class Forgrounder {
     //
     public long time = Global.foreground_anim_time;
     //
-    private int c_color = Color.rgb(rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+    private int c_color = Color.rgb(255, 255, 255);
     //
     public boolean isSelected = false;
     //
@@ -66,14 +66,14 @@ public class Forgrounder {
         isInit = false;
         //
         if(bounds==null) bounds = new RectF(bound.left, bound.top, bound.right, bound.bottom);
-        if(cx==-1 || !isDisableCircularTransformation()) {
+        if(cx==-1 || isEnabledCircularTransformation()) {
             cx = bound.centerX();
         }
-        if(cy==-1 || !isDisableCircularTransformation()) {
+        if(cy==-1 || isEnabledCircularTransformation()) {
             cy = bound.centerY();
         }
         if(radius==-1) {
-            if( isDisableCircularTransformation() )
+            if( !isEnabledCircularTransformation() )
                 radius = Math.max(Math.max(getDistance(new ImgPainter.FloatPoint(cx, cy), new ImgPainter.FloatPoint(bound.left, bound.top)),
                     getDistance(new ImgPainter.FloatPoint(cx, cy), new ImgPainter.FloatPoint(bound.left, bound.bottom))),
                     Math.max(getDistance(new ImgPainter.FloatPoint(cx, cy), new ImgPainter.FloatPoint(bound.right, bound.top)),
@@ -102,7 +102,7 @@ public class Forgrounder {
                 super.onAnimationStart(animation);
                 //touchUp = false;
                 setTouchUp(false);
-                c_color = Color.rgb(rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+                //c_color = Color.rgb(rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
                 c_alpha = alpha;
                 isPlaying = true;
             }
@@ -166,7 +166,7 @@ public class Forgrounder {
         int translucide_color = Color.argb(3*Color.alpha(c_color)/4, Color.red(c_color), Color.green(c_color), Color.blue(c_color));
         int translucide_color2 = Color.argb(Color.alpha(c_color)/2, Color.red(c_color), Color.green(c_color), Color.blue(c_color));
         RadialGradient radialGradient = null;
-        if( !isDisableCircularTransformation() ) {
+        if( isEnabledCircularTransformation() ) {
             radialGradient = new RadialGradient(cx, cy, radius,
                     new int[]{Color.TRANSPARENT, translucide_color, c_color, translucide_color2, Color.TRANSPARENT},
                     new float[]{0f, 2f * this.c_radius / this.radius / 3f, this.c_radius / this.radius, 4f * this.c_radius / this.radius / 3f, 1f}, Shader.TileMode.CLAMP);
@@ -186,7 +186,7 @@ public class Forgrounder {
     public void update(Canvas canvas){
         if(!isInit || c_radius<=0 || !isPlaying || c_alpha<=0) return;
         //
-        if(isDisableCircularTransformation()) {
+        if(!isEnabledCircularTransformation()) {
             Bitmap bmp = Bitmap.createBitmap((int) (bounds.width()), (int) (bounds.height()), Bitmap.Config.ARGB_8888);
             Canvas cvs = new Canvas(bmp);
             //
@@ -205,11 +205,11 @@ public class Forgrounder {
         if(!isEnabled || dontCheck) return;
         //
         if(isIntoRect(bound, new ImgPainter.FloatPoint(event.getX(), event.getY()))) {
-            if( isDisableCircularTransformation() ) {
+            if( !isEnabledCircularTransformation() ) {
                 cx = event.getX();
                 cy = event.getY();
                 //
-                if( isDisableCircularTransformation() )
+                if( !isEnabledCircularTransformation() )
                     radius = Math.max(Math.max(getDistance(new ImgPainter.FloatPoint(cx, cy), new ImgPainter.FloatPoint(bound.left, bound.top)),
                             getDistance(new ImgPainter.FloatPoint(cx, cy), new ImgPainter.FloatPoint(bound.left, bound.bottom))),
                             Math.max(getDistance(new ImgPainter.FloatPoint(cx, cy), new ImgPainter.FloatPoint(bound.right, bound.top)),
@@ -218,7 +218,10 @@ public class Forgrounder {
                     radius = Math.min(bounds.width()/2, bounds.height()/2);
                 radius*=2;
             }
-        }else return;
+        }else {
+            setTouchUp(true);
+            return;
+        }
         //
         init(bound);
         //
@@ -226,18 +229,15 @@ public class Forgrounder {
             if(!progresser.isRunning() && !progresser2.isRunning())
                 progresser.start();
         }else{
-            if(event.getAction()==MotionEvent.ACTION_UP/* || event.getAction()==MotionEvent.ACTION_MOVE ||
-                    event.getAction()==MotionEvent.ACTION_HOVER_MOVE*/){
+            /*if(event.getAction()==MotionEvent.ACTION_UP || event.getAction()==MotionEvent.ACTION_MOVE ||
+                    event.getAction()==MotionEvent.ACTION_HOVER_MOVE){*/
                 if(progresser.isRunning())
-                    //touchUp = true;
                     setTouchUp(true);
-                else {
-                    if(!isSelected)
+                else if(!isSelected)
                         progresser2.start();
-                }
                 if(event.getAction()==MotionEvent.ACTION_UP)
                     can_change_selected = true;
-            }
+            //}
         }
     }
 
@@ -245,13 +245,11 @@ public class Forgrounder {
         return (bound.left<=fp.x && fp.x<=bound.right) && (bound.top<=fp.y && fp.y<=bound.bottom);
     }
 
-    private boolean isDisableCircularTransformation(){
-        boolean ret = false;
+    private boolean isEnabledCircularTransformation(){
+        boolean ret = true;
         try {
-            ret = ((XImageView)main).isDisableCircularTransformation();
-        }catch (Exception e){
-            ret = true;
-        }
+            ret = ((XImageView)main).isEnabledCircularTransformation();
+        }catch (Exception e){}
         return ret;
     }
 

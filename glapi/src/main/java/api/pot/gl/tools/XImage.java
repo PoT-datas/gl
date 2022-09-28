@@ -2,8 +2,10 @@ package api.pot.gl.tools;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -16,6 +18,7 @@ import android.os.Environment;
 import android.os.StatFs;
 import android.print.PrintAttributes;
 import android.print.pdf.PrintedPdfDocument;
+import android.provider.MediaStore;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.view.View;
@@ -33,6 +36,24 @@ import static android.content.Context.PRINT_SERVICE;
 
 public class XImage {
 
+
+    public static void browseImageFromGallery(Activity activity, int code) {
+        Intent galleryIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        // Start the Intent
+        activity.startActivityForResult(galleryIntent, code);
+    }
+
+
+    public static String pathFromUri(Context context, Uri uri) {
+        String[] proj = { MediaStore.Images.Media.DATA };
+        CursorLoader loader = new CursorLoader(context, uri, proj, null, null, null);
+        Cursor cursor = loader.loadInBackground();
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+        cursor.moveToFirst();
+        String result = cursor.getString(column_index);
+        cursor.close();
+        return result;
+    }
 
     public static void galleryAddPic(Context context, File file) {
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
@@ -96,8 +117,7 @@ public class XImage {
         return getResizedBitmap(bitmap, reqWidth, reqHeight);
     }
 
-    public static int calculateInSampleSize(
-            BitmapFactory.Options options, int reqWidth, int reqHeight) {
+    public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
         // Raw height and width of image
         final int height = options.outHeight;
         final int width = options.outWidth;
@@ -110,10 +130,12 @@ public class XImage {
 
             // Calculate the largest inSampleSize value that is a power of 2 and keeps both
             // height and width larger than the requested height and width.
-            while ((halfHeight / inSampleSize) > reqHeight
-                    && (halfWidth / inSampleSize) > reqWidth) {
-                inSampleSize *= 2;
-            }
+            try{
+                while ((halfHeight / inSampleSize) > reqHeight
+                        && (halfWidth / inSampleSize) > reqWidth) {
+                    inSampleSize *= 2;
+                }
+            }catch (Exception e){}
         }
 
         return inSampleSize;

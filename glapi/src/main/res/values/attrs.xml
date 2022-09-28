@@ -62,10 +62,25 @@
 
         <attr name="xiv_alpha" format="float" />
         <attr name="xiv_bg_alpha" format="float" />
-        <attr name="xiv_disable_circular_transformation" format="boolean" />
         <attr name="xiv_font_path" format="string" />
 
         <attr name="xiv_foregrounder_enabled" format="boolean" />
+
+
+
+
+
+
+
+        <attr name="xiv_enabled_circular_transformation" format="boolean" />
+        <attr name="xiv_bound_with_bitmap_dimens" format="boolean" />
+        <attr name="xiv_bound_with_view_dimens" format="boolean" />
+
+        <attr name="xiv_shadow_rad" format="dimension" />
+        <attr name="xiv_shadow_dx" format="dimension" />
+        <attr name="xiv_shadow_dy" format="dimension" />
+        <attr name="xiv_shadow_color" format="color" />
+
 
     </declare-styleable>
 

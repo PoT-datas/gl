@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ValueAnimator;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.RequiresApi;
@@ -55,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
     boolean isFirst = true;
     private void init3() {
         test2 = (XImageView) findViewById(R.id.test2);
-        test2.setDisableCircularTransformation(true);
         //test2.getTransitor().useTransition(false);
         test2.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -70,14 +70,12 @@ public class MainActivity extends AppCompatActivity {
     private void init2() {
         tryer = (XImageView) findViewById(R.id.tryer);
         //tryer4.setImgNormalSize(false);
-        tryer.setDisableCircularTransformation(true);
         tryer.getNotRoundForm().setRoundPeaks(true, true, true, false);
         tryer.setUseGradientColorsForBorder(true);
         //
 
         tryer2 = (XImageView) findViewById(R.id.tryer2);
         //tryer4.setImgNormalSize(false);
-        tryer2.setDisableCircularTransformation(true);
         tryer2.getNotRoundForm().setRoundPeaks(true, true, true, false);
         //
         tryer2.getDetProgress().init();
@@ -91,7 +89,6 @@ public class MainActivity extends AppCompatActivity {
 
         tryer3 = (XImageView) findViewById(R.id.tryer3);
         //tryer4.setImgNormalSize(false);
-        tryer3.setDisableCircularTransformation(true);
         tryer3.getNotRoundForm().setRoundPeaks(true, true, true, false);
         //
         tryer3.getIndetProgress().initType(IndetProgress.INDET_PROGRESS_STATIC_TURN);
@@ -106,8 +103,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         tryer4 = (XImageView) findViewById(R.id.tryer4);
-        tryer4.setImgNormalSize(false);
-        tryer4.setDisableCircularTransformation(true);
         tryer4.getNotRoundForm().setRoundPeaks(true, true, true, false);
         //
         tryer4.getIndetProgress().initType(IndetProgress.INDET_PROGRESS_DYN_PENDULUM);
@@ -221,15 +216,13 @@ public class MainActivity extends AppCompatActivity {
         });
 
         tenth = (XImageView) findViewById(R.id.tenth);
-        /*tenth.getAroundViews().get(1).setVisible(true);
-        tenth.getAroundViews().get(1).setText("$");
-        tenth.getAroundViews().get(3).setVisible(true);
-        tenth.getAroundViews().get(3).setText("€");
-        tenth.getAroundViews().get(5).setVisible(true);
-        tenth.getAroundViews().get(5).setText("7");
-        tenth.getAroundViews().get(7).setVisible(true);
-        tenth.getAroundViews().get(7).setText("13");
-        tenth.setUseGradientColorsForBorder(true);*/
+        tenth.getAroundView(1).setText("$", Color.parseColor("#aaffffff"), Color.RED, Color.GREEN, Color.BLACK);
+        tenth.getAroundView(1).setVisible(true);
+        tenth.getAroundView(3).setFullColor(Color.parseColor("#aaffffff"), Color.RED, Color.GREEN, Color.BLACK);
+        tenth.getAroundView(3).setVisible(true);
+        tenth.getAroundView(7).setImage(R.drawable.wizz, Color.parseColor("#aaffffff"), Color.RED, Color.GREEN, Color.BLACK);
+        tenth.getAroundView(7).setVisible(true);
+        tenth.setUseGradientColorsForBorder(true);
     }
 
     public static void initDet(final XImageView main) {

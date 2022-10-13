@@ -1104,6 +1104,8 @@ public class XImageView extends ImageView {
         public String imgPath;
         public Bitmap bitmap;
 
+        public float soft = 1;
+
         public void setText(String text, int... colors_f2b){//From foreground to back
             type = TYPE_TEXT;
             this.text = text;
@@ -1161,14 +1163,19 @@ public class XImageView extends ImageView {
         public int colorBorder = -1;
         public int colorShadow = -1;
 
-        public RectF bound;
+        public RectF bound, realBound;
         public Paint paintContent;
         public Paint paintBg;
         public Paint paintBorder;
         public Paint paintShadow;
 
 
+        //Bitmap bmp;
+        //Canvas canvas;
+
         public void onDraw(Canvas canvas) {
+            //bmp = Bitmap.createBitmap((int) bound.width(), (int) bound.height(), Bitmap.Config.ARGB_8888);
+            //canvas = new Canvas(bmp);
             if(colorBg!=-1)canvas.drawOval(bound, paintBg);
             if(colorContent!=-1){
                 switch(type){
@@ -1194,6 +1201,12 @@ public class XImageView extends ImageView {
             if(colorBorder!=-1)
                 canvas.drawOval(new RectF(bound.left-paintBorder.getStrokeWidth()/2, bound.top-paintBorder.getStrokeWidth()/2,
                     bound.right+paintBorder.getStrokeWidth()/2, bound.bottom+paintBorder.getStrokeWidth()/2), paintBorder);
+            ///
+            //cvs.drawBitmap(bmp, rectFToRect(bound), rectFToRect(realBound), null);
+        }
+
+        private Rect rectFToRect(RectF rectF){
+            return new Rect((int)rectF.left, (int)rectF.top, (int)rectF.right, (int)rectF.bottom);
         }
 
         public void init() {
@@ -1204,11 +1217,12 @@ public class XImageView extends ImageView {
                     y = (float) (mDrawableRect.centerY() + mBorderRadius*Math.sin(Math.toRadians(position)) - h/2);
             //
             bound = new RectF(x, y, x+w, y+h);
-            int shadow = 5;
+            //bound = mBorderRect;
+            int shadow = 1;
             marginContent = (int) (w/5);
             if(colorContent!=-1){
                 if(paintContent==null)paintContent = new Paint();
-                paintContent.setMaskFilter(new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL));
+                paintContent.setMaskFilter(new BlurMaskFilter(soft, BlurMaskFilter.Blur.NORMAL));
                 if(type==TYPE_IMAGE){
                     if(bitmap==null) {
                         if(imgPath!=null) bitmap = XImage.decodeSampledBitmapFromPath(imgPath,
@@ -1224,7 +1238,7 @@ public class XImageView extends ImageView {
                 }else paintContent.setColor(colorContent);
                 if(colorShadow!=-1){
                     paintContent.setShadowLayer(shadow,shadow, shadow, colorShadow);
-                    paintContent.setMaskFilter(new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL));
+                    paintContent.setMaskFilter(new BlurMaskFilter(soft, BlurMaskFilter.Blur.NORMAL));
                 }
             }
             if(colorBg!=-1){
@@ -1232,7 +1246,7 @@ public class XImageView extends ImageView {
                 paintBg.setColor(colorBg);
                 if(colorShadow!=-1){
                     paintBg.setShadowLayer(shadow,shadow, shadow, colorShadow);
-                    paintBg.setMaskFilter(new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL));
+                    paintBg.setMaskFilter(new BlurMaskFilter(soft, BlurMaskFilter.Blur.NORMAL));
                 }
             }
             if(colorBorder!=-1){
@@ -1240,7 +1254,7 @@ public class XImageView extends ImageView {
                 paintBorder.setStyle(Paint.Style.STROKE);
                 paintBorder.setStrokeWidth(w/5);
                 paintBorder.setColor(colorBorder);
-                paintBorder.setMaskFilter(new BlurMaskFilter(1, BlurMaskFilter.Blur.NORMAL));
+                paintBorder.setMaskFilter(new BlurMaskFilter(soft, BlurMaskFilter.Blur.NORMAL));
             }
             //
             isInit = true;

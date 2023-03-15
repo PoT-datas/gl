@@ -55,6 +55,7 @@ import api.pot.gl.xiv.tools.Pulsation;
 import api.pot.gl.xiv.tools.XivListener;
 import api.pot.gl.xiv.tools.morphism.Transformer;
 import api.pot.gl.xiv.tools.Transitor;
+import api.pot.gl.xiv.tools.stars.StarSystem;
 
 import java.io.File;
 import java.text.DecimalFormat;
@@ -297,12 +298,17 @@ public class XImageView extends ImageView {
         shadowColor = a.getColor(R.styleable.XImageView_xiv_shadow_color, Color.BLACK);
 
 
+        enabled = a.getBoolean(R.styleable.XImageView_xiv_enabled, true);
+        setEnabled(a.getBoolean(R.styleable.XImageView_xiv_enabled, true));
+
+
         Global.useContext(context);
 
         a.recycle();
 
         init();
     }
+    private boolean enabled = true;
 
     private void init() {
         super.setScaleType(SCALE_TYPE);
@@ -330,6 +336,7 @@ public class XImageView extends ImageView {
         descriptor = new Descriptor(this);
         transformer = new Transformer(this);
         notRoundForm = new NotRoundForm();
+        starSystem = new StarSystem(this);
         //
         clearAroundViews();
         for(int i=0;i<8;i++)
@@ -410,7 +417,12 @@ public class XImageView extends ImageView {
                 onDrawBitmap(canvas, p, mDrawableRadius, mDrawableRect, notRoundForm.notRoundForm_drawablePath);
             onDrawBitmap(canvas, mBitmapPaint, mDrawableRadius, mDrawableRect, notRoundForm.notRoundForm_drawablePath);
             //
-            if(transitor.transition) onDrawBitmap(canvas, transitor.update(), transitor.mDrawableRadius, transitor.mDrawableRect, transitor.notRoundForm_drawablePath);
+            if(transitor.transition) onDrawBitmap(canvas, transitor.update(), transitor.mDrawableRadius,
+                    transitor.mDrawableRect, transitor.notRoundForm_drawablePath);
+            //
+            if(starSystem.visibility != StarSystem.STAR_SYSTEM_GONE){
+                starSystem.update(canvas, new RectF(0, 0, canvas.getWidth(), canvas.getHeight()));
+            }
         }
         //
         if(xivListener!=null) xivListener.onDrawContent(canvas);
@@ -528,6 +540,179 @@ public class XImageView extends ImageView {
         //draw forground
         forgrounder.update(canvas);
     }
+/**
+    @SuppressLint("DrawAllocation")
+    @Override
+    protected void onDraw(Canvas canvas) {
+        //transitor.update();
+
+        if (mBitmap == null) {
+            initializeBitmap();
+            return;
+        }
+
+        //draw back shadow
+
+        //draw bg
+        if (mCircleBackgroundColor != Color.TRANSPARENT && mEnabledCircularTransformation) {
+            Log.d("XL", getHeight()+" http://"+mCircleBackgroundRadius);
+            canvas.drawCircle(mDrawableRect.centerX(), mDrawableRect.centerY(), mCircleBackgroundRadius, mCircleBackgroundPaint);
+        }else if(mCircleBackgroundColor != Color.TRANSPARENT && !mEnabledCircularTransformation){
+            canvas.drawCircle(mDrawableRect.centerX(), mDrawableRect.centerY(), Math.max(getWidth(), getHeight()),
+                    mCircleBackgroundPaint);
+        }
+
+        //draw content
+        if(graphType==GRAPH_TYPE_PICTURE) {
+            //draw bitmap with shadow
+            ///shadow
+            Paint p = new Paint();
+            if(shadowRad>0){
+                p.setStyle(Paint.Style.STROKE);
+                p.setColor(shadowColor);
+                p.setStrokeWidth(Math.max(Math.max(shadowDx, shadowDy), shadowRad));
+                p.setShadowLayer(shadowRad,shadowDx, shadowDy, shadowColor);
+                p.setMaskFilter(new BlurMaskFilter(Math.max(Math.max(shadowDx, shadowDy), shadowRad), BlurMaskFilter.Blur.NORMAL));
+            }
+            //
+            mBitmapPaint.setAlpha((int) getAlpha());
+            //
+            if(!mEnabledCircularTransformation){
+                if(notRoundForm.rx==-1) notRoundForm.rx = mDrawableRect.width()*notRoundForm.radiusRatio;
+                if(notRoundForm.ry==-1) notRoundForm.ry = mDrawableRect.height()*notRoundForm.radiusRatio;
+                if(notRoundForm.notRoundForm_drawablePath==null)
+                    notRoundForm.notRoundForm_drawablePath =
+                            ImgPainter.roundedRectPath(mDrawableRect, notRoundForm.rx, notRoundForm.ry,
+                                    notRoundForm.isTopLeftRound, notRoundForm.isTopRightRound, notRoundForm.isBottomRightRound, notRoundForm.isBottomLeftRound);
+            }
+            ///shadow
+            if(shadowRad>0)
+                onDrawBitmap(canvas, p, mDrawableRadius, mDrawableRect, notRoundForm.notRoundForm_drawablePath);
+            onDrawBitmap(canvas, mBitmapPaint, mDrawableRadius, mDrawableRect, notRoundForm.notRoundForm_drawablePath);
+            //
+            if(transitor.transition) onDrawBitmap(canvas, transitor.update(), transitor.mDrawableRadius,
+                    transitor.mDrawableRect, transitor.notRoundForm_drawablePath);
+            //
+            if(starSystem.visibility != StarSystem.STAR_SYSTEM_GONE){
+                starSystem.update(canvas, new RectF(0, 0, canvas.getWidth(), canvas.getHeight()));
+            }
+        }
+        //
+        if(xivListener!=null) xivListener.onDrawContent(canvas);
+
+        //draw fg
+        if(mMaxBorderRadius > DEFAULT_MAX_BORDER_RADIUS){
+            Paint mMaxBorderPaint = new Paint();
+            mMaxBorderPaint.setStyle(Paint.Style.STROKE);
+            mMaxBorderPaint.setStrokeWidth(mMaxBorderWidth);
+            mMaxBorderPaint.setColor(Color.TRANSPARENT);//Color.argb(80, 0, 0, 255)
+
+            canvas.drawCircle(mBorderRect.centerX(), mBorderRect.centerY(), mMaxBorderRadius, mMaxBorderPaint);
+        }
+        if (mBorderWidth > 0) {
+            if(mBorderType==BORDER_TYPE_NORMAL){
+                if(mEnabledCircularTransformation)
+                    canvas.drawCircle(mBorderRect.centerX(), mBorderRect.centerY(), mBorderRadius, mBorderPaint);
+                else {
+                    if(notRoundForm.border_rx==-1) notRoundForm.border_rx = mBorderRect.width()*notRoundForm.radiusRatio;
+                    if(notRoundForm.border_ry==-1) notRoundForm.border_ry = mBorderRect.height()*notRoundForm.radiusRatio;
+                    if(notRoundForm.notRoundForm_borderPath==null) notRoundForm.notRoundForm_borderPath =
+                            ImgPainter.roundedRectPath(mBorderRect, notRoundForm.border_rx, notRoundForm.border_ry,
+                                    notRoundForm.isTopLeftRound, notRoundForm.isTopRightRound, notRoundForm.isBottomRightRound, notRoundForm.isBottomLeftRound);
+                    //
+                    if(notRoundForm.isRect()) canvas.drawRect(mBorderRect, mBorderPaint);
+                    else canvas.drawPath(notRoundForm.notRoundForm_borderPath, mBorderPaint);
+                }
+            }else {
+                arcBorderRect = new RectF();
+                arcBorderRect.set(mBorderRect);
+                arcBorderRect.left -= mBorderWidth/2;
+                arcBorderRect.top -= mBorderWidth/2;
+                arcBorderRect.right += mBorderWidth/2;
+                arcBorderRect.bottom += mBorderWidth/2;
+
+                if(mBorderType==BORDER_TYPE_DET_PROGRESS && myArcs.size()>0){
+                    Paint nowPaint = new Paint();
+                    nowPaint.set(mBorderPaint);
+                    //
+                    if (myArcs.get(0).paint.color != -1)
+                        nowPaint.setColor(myArcs.get(0).paint.color);
+                    if (myArcs.get(0).paint.shader != null)
+                        nowPaint.setShader(myArcs.get(0).paint.shader);
+                    //
+                    if(mEnabledCircularTransformation)
+                        canvas.drawArc(arcBorderRect, myArcs.get(0).startAngle, myArcs.get(0).sweepAngle, myArcs.get(0).useCenter, nowPaint);
+                    else {
+                        if(notRoundForm.arc_rx==-1) notRoundForm.arc_rx = arcBorderRect.width()*notRoundForm.radiusRatio;
+                        if(notRoundForm.arc_ry==-1) notRoundForm.arc_ry = arcBorderRect.height()*notRoundForm.radiusRatio;
+                        if(notRoundForm.notRoundForm_arcPathPoints==null) notRoundForm.notRoundForm_arcPathPoints =
+                                ImgPainter.getPoints(ImgPainter.listRoundRectPaths(arcBorderRect, notRoundForm.arc_rx, notRoundForm.arc_ry,
+                                        notRoundForm.isTopLeftRound, notRoundForm.isTopRightRound,
+                                        notRoundForm.isBottomRightRound, notRoundForm.isBottomLeftRound));
+                        if(notRoundForm.notRoundForm_arcsPaths==null) {
+                            notRoundForm.notRoundForm_arcsPaths = new ArrayList<>();
+                            for(Arc elt : myArcs) notRoundForm.notRoundForm_arcsPaths.add(null);
+                        }
+                        if(notRoundForm.notRoundForm_arcsPaths.get(0)==null)
+                            notRoundForm.notRoundForm_arcsPaths.set(0, ImgPainter.arcPath(myArcs.get(0),
+                                    notRoundForm.notRoundForm_arcPathPoints, arcBorderRect.centerX(), arcBorderRect.centerY()) );
+                        //
+                        if(notRoundForm.notRoundForm_arcsPaths.get(0)!=null) canvas.drawPath(notRoundForm.notRoundForm_arcsPaths.get(0), nowPaint);
+                    }
+                }else if(mBorderType==BORDER_TYPE_UNDET_PROGRESS && myArcs.size()>0){
+                    int i=0;
+                    for(Arc arc : myArcs){
+                        Paint nowPaint = new Paint();
+                        nowPaint.set(mBorderPaint);
+                        if(arc.paint.color!=-1)nowPaint.setColor(arc.paint.color);
+                        if(arc.paint.shader!=null)nowPaint.setShader(arc.paint.shader);
+                        //
+                        if(mEnabledCircularTransformation)
+                            canvas.drawArc(arcBorderRect, arc.startAngle, arc.sweepAngle, arc.useCenter, nowPaint);
+                        else {
+                            if(notRoundForm.arc_rx==-1) notRoundForm.arc_rx = arcBorderRect.width()*notRoundForm.radiusRatio;
+                            if(notRoundForm.arc_ry==-1) notRoundForm.arc_ry = arcBorderRect.height()*notRoundForm.radiusRatio;
+                            if(notRoundForm.notRoundForm_arcPathPoints==null) notRoundForm.notRoundForm_arcPathPoints =
+                                    ImgPainter.getPoints(ImgPainter.listRoundRectPaths(arcBorderRect, notRoundForm.arc_rx, notRoundForm.arc_ry,
+                                            notRoundForm.isTopLeftRound, notRoundForm.isTopRightRound,
+                                            notRoundForm.isBottomRightRound, notRoundForm.isBottomLeftRound));
+                            if(notRoundForm.notRoundForm_arcsPaths==null) {
+                                notRoundForm.notRoundForm_arcsPaths = new ArrayList<>();
+                                for(int j=0;j<myArcs.size();j++) notRoundForm.notRoundForm_arcsPaths.add(null);
+                            }
+                            if(notRoundForm.notRoundForm_arcsPaths.size()<=i) {
+                                for(int k=notRoundForm.notRoundForm_arcsPaths.size();k<=i;k++) notRoundForm.notRoundForm_arcsPaths.add(null);
+                            }
+                            if(notRoundForm.notRoundForm_arcsPaths.size()>i && notRoundForm.notRoundForm_arcsPaths.get(i)==null)
+                                notRoundForm.notRoundForm_arcsPaths.set(i, ImgPainter.arcPath(arc,
+                                        notRoundForm.notRoundForm_arcPathPoints, arcBorderRect.centerX(), arcBorderRect.centerY()) );
+                            //
+                            if(notRoundForm.notRoundForm_arcsPaths.size()>i && notRoundForm.notRoundForm_arcsPaths.get(i)!=null) canvas.drawPath(notRoundForm.notRoundForm_arcsPaths.get(i), nowPaint);
+                        }
+                        //
+                        i++;
+                    }
+                }
+            }
+        }
+
+        //draw AroundViews
+        if(aroundViews!=null && aroundViews.size()!=0){
+            for(AroundView aroundView : aroundViews)
+                if(aroundView.isVisible){
+                    aroundView.init();
+                    aroundView.onDraw(canvas);
+                }
+        }
+
+        //draw description
+        if(descriptor.isVisible){
+            if(descriptor.isTextDatasReady);
+                //TextPainter.drawTextCentered(descriptor.text, null, canvas, descriptor.textBound, true);
+        }
+        //draw forground
+        forgrounder.update(canvas);
+    }*/
 
     private int cmpA = 0;
 
@@ -568,6 +753,12 @@ public class XImageView extends ImageView {
 
 
     //*************************XIV***Methodes******************************************************
+
+    private StarSystem starSystem;
+    public StarSystem getStarSystem() {
+        return starSystem;
+    }
+
     public void setShadowRad(int shadowRad) {
         this.shadowRad = shadowRad;
         setup();
@@ -1176,7 +1367,12 @@ public class XImageView extends ImageView {
         public void onDraw(Canvas canvas) {
             //bmp = Bitmap.createBitmap((int) bound.width(), (int) bound.height(), Bitmap.Config.ARGB_8888);
             //canvas = new Canvas(bmp);
+            //
+            int save = canvas.save();
+            canvas.clipPath(clPath);
+            //
             if(colorBg!=-1)canvas.drawOval(bound, paintBg);
+            //
             if(colorContent!=-1){
                 switch(type){
                     case TYPE_FULL_COLOR:{
@@ -1192,8 +1388,9 @@ public class XImageView extends ImageView {
                         break;
                     }
                     case TYPE_IMAGE:{
-                        canvas.drawOval(new RectF(bound.left+marginContent, bound.top+marginContent,
-                                bound.right-marginContent, bound.bottom-marginContent), paintContent);
+                        /*canvas.drawOval(new RectF(bound.left+marginContent, bound.top+marginContent,
+                                bound.right-marginContent, bound.bottom-marginContent), paintContent);*/
+                        canvas.drawBitmap(bitmap, new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight()), bound, null);
                         break;
                     }
                 }
@@ -1203,12 +1400,15 @@ public class XImageView extends ImageView {
                     bound.right+paintBorder.getStrokeWidth()/2, bound.bottom+paintBorder.getStrokeWidth()/2), paintBorder);
             ///
             //cvs.drawBitmap(bmp, rectFToRect(bound), rectFToRect(realBound), null);
+            //
+            canvas.restoreToCount(save);
         }
 
         private Rect rectFToRect(RectF rectF){
             return new Rect((int)rectF.left, (int)rectF.top, (int)rectF.right, (int)rectF.bottom);
         }
 
+        Path clPath;
         public void init() {
             //if(isInit) return;
             float w = getSmartWidth() * ratioSize;
@@ -1217,6 +1417,9 @@ public class XImageView extends ImageView {
                     y = (float) (mDrawableRect.centerY() + mBorderRadius*Math.sin(Math.toRadians(position)) - h/2);
             //
             bound = new RectF(x, y, x+w, y+h);
+            //
+            clPath = new Path();
+            clPath.addOval(bound, Path.Direction.CCW);
             //bound = mBorderRect;
             int shadow = 1;
             marginContent = (int) (w/5);
@@ -1227,7 +1430,7 @@ public class XImageView extends ImageView {
                     if(bitmap==null) {
                         if(imgPath!=null) bitmap = XImage.decodeSampledBitmapFromPath(imgPath,
                                 (int) bound.width()-marginContent*2, (int) bound.height()-marginContent*2);
-                        else if(imgRes!=-1) bitmap = XImage.decodeSampledBitmapFromResource(getResources(), imgRes,
+                        else if(imgRes!=-1) bitmap = XImage.decodeSampledBitmapFromXMLResource(getResources(), imgRes,
                                 (int) bound.width()-marginContent*2, (int) bound.height()-marginContent*2);
                     }
                     try {
@@ -1788,6 +1991,8 @@ public class XImageView extends ImageView {
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if(!isEnabled()) return false;
+        ///
         if(!manual_manage_touch) {
             if (inTouchableArea(event.getX(), event.getY()))
                 forgrounder.onTouch(event, (mBorderWidth > 0 ? new RectF(mBorderRect.left - getPaddingLeft() - mBorderWidth, mBorderRect.top - mBorderWidth - getPaddingTop(), mBorderRect.right + mBorderWidth + getPaddingRight(), mBorderRect.bottom + mBorderWidth + getPaddingBottom()) :
@@ -1795,6 +2000,8 @@ public class XImageView extends ImageView {
             else
                 forgrounder.touchUp = true;
         }
+        //
+        if(starSystem.isEnabled) starSystem.onTouchEvent(event);
         //
         return (manual_manage_touch && super.onTouchEvent(event)) || !manual_manage_touch && ( inTouchableArea(event.getX(), event.getY()) && ( super.onTouchEvent(event) || forgrounder.isEnabled) );
     }

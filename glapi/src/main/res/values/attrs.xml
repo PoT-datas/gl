@@ -66,6 +66,8 @@
 
         <attr name="xiv_foregrounder_enabled" format="boolean" />
 
+        <attr name="xiv_enabled" format="boolean" />
+
 
 
 

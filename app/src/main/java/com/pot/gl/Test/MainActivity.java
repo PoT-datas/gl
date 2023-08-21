@@ -18,6 +18,7 @@ import android.widget.Toast;
 
 import com.pot.gl.R;
 import api.pot.gl.others.ColorSelector;
+import api.pot.gl.tools.XImage;
 import api.pot.gl.xiv.XImageView;
 import api.pot.gl.xiv.tools.Forgrounder;
 import api.pot.gl.xiv.tools.IndetProgress;
